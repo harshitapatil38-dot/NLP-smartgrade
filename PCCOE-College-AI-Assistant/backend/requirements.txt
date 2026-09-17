@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+sqlalchemy
+alembic
+psycopg2-binary
+pytest
+pypdf
+python-docx
+python-multipart
