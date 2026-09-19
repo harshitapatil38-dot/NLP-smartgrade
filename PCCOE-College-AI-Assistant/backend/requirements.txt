@@ -7,3 +7,5 @@ pytest
 pypdf
 python-docx
 python-multipart
+pgvector
+sentence-transformers

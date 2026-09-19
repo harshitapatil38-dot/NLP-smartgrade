@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Enum, DateTime, Text, JSON
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
+from pgvector.sqlalchemy import Vector
 from app.database.database import Base
 from .enums import StatusEnum, ProcessingStatusEnum
 
@@ -46,7 +47,8 @@ class DocumentChunk(Base):
     chunk_text = Column(Text, nullable=False)
     chunk_order = Column(Integer, nullable=False)
     metadata_ = Column("metadata", JSON)  # using metadata_ because metadata is reserved in SQLAlchemy
+    embedding = Column(Vector(384))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    # vector column to be added later
+
 
     version = relationship("DocumentVersion", back_populates="chunks")
