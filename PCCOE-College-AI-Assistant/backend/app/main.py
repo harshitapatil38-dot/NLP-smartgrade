@@ -7,6 +7,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import chat, health
+from app.core.logging import setup_logging
+from app.core.middleware import RequestLoggingMiddleware
+from app.core.errors import setup_exception_handlers
+
+# Configure structured logging at startup
+setup_logging()
 
 # ---------------------------------------------------------------------------
 # Application
@@ -40,6 +46,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ---------------------------------------------------------------------------
+# Middleware (Request ID & Logging)
+# ---------------------------------------------------------------------------
+
+app.add_middleware(RequestLoggingMiddleware)
+
+# ---------------------------------------------------------------------------
+# Exception Handlers
+# ---------------------------------------------------------------------------
+
+setup_exception_handlers(app)
 
 # ---------------------------------------------------------------------------
 # Routers

@@ -76,6 +76,13 @@ class ReadinessResponse(BaseModel):
 # Errors
 # ---------------------------------------------------------------------------
 
+class ErrorDetail(BaseModel):
+    """Detailed information about an API error."""
+    code: str = Field(description="Internal error code (e.g., VALIDATION_ERROR).")
+    message: str = Field(description="Human-readable error message.")
+    request_id: Optional[str] = Field(default=None, description="Request correlation ID.")
+
+
 class ErrorResponse(BaseModel):
-    """Standard error response."""
-    detail: str
+    """Standard structured error response."""
+    error: ErrorDetail
