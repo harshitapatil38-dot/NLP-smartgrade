@@ -9,3 +9,8 @@ python-docx
 python-multipart
 pgvector
 sentence-transformers
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt
+requests
+beautifulsoup4

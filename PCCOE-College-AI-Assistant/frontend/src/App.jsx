@@ -1,16 +1,36 @@
-import { useState } from 'react'
-import './App.css'
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './hooks/useAuth';
+import { AdminLayout } from './components/AdminLayout';
+import { LoginPage } from './pages/LoginPage';
+import { DocumentListPage } from './pages/DocumentListPage';
+import { DocumentCreatePage } from './pages/DocumentCreatePage';
+import { DocumentDetailsPage } from './pages/DocumentDetailsPage';
+import { AdminDashboardPage } from './pages/AdminDashboardPage';
+import ChatbotPage from './pages/ChatbotPage';
+import './index.css';
 
-function App() {
+const App = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) return <div className="loading-screen">Loading Application...</div>;
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>PCCOE Intelligent College Information Assistant</h1>
-        <p>Welcome to the PCCOE College AI Assistant Project Foundation.</p>
-        <p>This is a basic landing page. The chatbot UI and Admin Panel will be added later.</p>
-      </header>
-    </div>
-  )
-}
+    <Routes>
+      <Route path="/" element={<ChatbotPage />} />
+      <Route path="/login" element={user ? <Navigate to="/admin/dashboard" replace /> : <LoginPage />} />
+      
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<AdminDashboardPage />} />
+        <Route path="documents" element={<DocumentListPage />} />
+        <Route path="documents/new" element={<DocumentCreatePage />} />
+        <Route path="documents/:id" element={<DocumentDetailsPage />} />
+      </Route>
+      
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+};
 
-export default App
+export default App;

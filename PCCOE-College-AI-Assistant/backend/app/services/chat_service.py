@@ -61,16 +61,18 @@ class ChatService:
         Process a user question within a conversation session.
         1. Gets/creates session.
         2. Retrieves history.
-        3. Calls RAG service with history.
-        4. Saves user and assistant messages to the database.
+        3. Handles greetings/help deterministically.
+        4. Contextualizes follow-up queries using LLM.
+        5. Calls RAG service with contextualized query.
+        6. Saves messages to the database.
         """
         # 1. Get or create session
         session = self.get_or_create_session(session_token)
 
-        # 2. Get formatted history
+        # 2. Get formatted history (BEFORE adding current message)
         history_str = self.get_chat_history(session.id)
 
-        # 3. Save user message first so we have a record even if RAG fails
+        # 3. Save user message first so we have a record
         user_msg = ChatMessage(
             session_id=session.id,
             role="user",
@@ -79,11 +81,103 @@ class ChatService:
         self.db.add(user_msg)
         self.db.commit()
 
-        # 4. Perform RAG query
-        rag_result = self.rag_service.ask(question, conversation_history=history_str)
+        # Handle simple greetings deterministically
+        q_lower = question.lower().strip()
+        greetings = {"hi", "hello", "hey", "good morning", "good afternoon", "good evening", "help"}
+        if q_lower in greetings or q_lower.startswith(("hi ", "hello ", "hey ")):
+            welcome_msg = (
+                "Hello! I am the official PCCOE College Information Assistant. "
+                "I can help you with questions about admissions, departments, courses, "
+                "library, facilities, scholarships, clubs, and other official college information. "
+                "How can I help you today?"
+            )
+            assistant_msg = ChatMessage(
+                session_id=session.id,
+                role="assistant",
+                content=welcome_msg,
+                retrieved_sources=[]
+            )
+            self.db.add(assistant_msg)
+            self.db.commit()
+            return session.session_token, RAGResult(
+                answer=welcome_msg,
+                sources=[],
+                query=question,
+                retrieved_chunks=0,
+                context_truncated=False
+            )
+        
+        # 4. Contextualize follow-up query if history exists
+        search_query = question
+        if history_str:
+            try:
+                from app.services.llm_service import LLMService
+                provider = LLMService.get_provider()
+                sys_prompt = (
+                    "Given the conversation history, rewrite the user's latest question to be a standalone query "
+                    "that includes all necessary context (e.g., resolving pronouns like 'it' or 'they'). "
+                    "If the latest question is completely ambiguous and lacks any context (e.g., 'What are the timings?' "
+                    "with no prior mention of a specific facility), simply reply with the exact word: AMBIGUOUS. "
+                    "Otherwise, reply ONLY with the rewritten standalone query, with no additional text."
+                )
+                user_prompt = f"History:\n{history_str}\n\nLatest Question: {question}"
+                rewritten = provider.generate(
+                    system_prompt=sys_prompt,
+                    user_question=user_prompt,
+                    context="",
+                    max_tokens=50
+                ).strip()
+                
+                if rewritten == "AMBIGUOUS":
+                    clarification = "Could you specify which area you mean—for example, the library, college, or another service?"
+                    assistant_msg = ChatMessage(
+                        session_id=session.id,
+                        role="assistant",
+                        content=clarification,
+                        retrieved_sources=[]
+                    )
+                    self.db.add(assistant_msg)
+                    self.db.commit()
+                    return session.session_token, RAGResult(
+                        answer=clarification,
+                        sources=[],
+                        query=question,
+                        retrieved_chunks=0,
+                        context_truncated=False
+                    )
+                elif rewritten and len(rewritten) > 3:
+                    search_query = rewritten
+            except Exception:
+                pass # Fallback to original question on LLM error
 
-        # 5. Save assistant message
-        # Convert sources to JSON-serializable dicts
+        # Catch ambiguous questions without history
+        elif len(q_lower.split()) <= 4 and ("timing" in q_lower or "where" in q_lower or "how much" in q_lower):
+            # Very simplistic heuristic for generic questions without context
+            if "library" not in q_lower and "college" not in q_lower and "admission" not in q_lower:
+                clarification = "Could you specify which area you mean—for example, the library, college, or another service?"
+                assistant_msg = ChatMessage(
+                    session_id=session.id,
+                    role="assistant",
+                    content=clarification,
+                    retrieved_sources=[]
+                )
+                self.db.add(assistant_msg)
+                self.db.commit()
+                return session.session_token, RAGResult(
+                    answer=clarification,
+                    sources=[],
+                    query=question,
+                    retrieved_chunks=0,
+                    context_truncated=False
+                )
+
+        # 5. Perform RAG query
+        # We pass search_query to search, but want original question (or rewritten) for final prompt.
+        # Actually RAGService currently takes question and history_str. Let's update RAGService to accept a standalone_query.
+        # Wait, if we rewrite it here, we can just pass the rewritten query to rag_service.ask.
+        rag_result = self.rag_service.ask(search_query, conversation_history=history_str, original_question=question)
+
+        # 6. Save assistant message
         sources_json = []
         for s in rag_result.sources:
             sources_json.append({

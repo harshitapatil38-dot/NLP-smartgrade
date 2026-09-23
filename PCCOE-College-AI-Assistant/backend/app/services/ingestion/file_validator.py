@@ -19,4 +19,14 @@ class FileValidator:
         if ext not in self.allowed_extensions:
             raise FileValidationError(f"Unsupported file extension: {ext}. Allowed: {self.allowed_extensions}")
 
+        # Magic byte validation for supported binary types
+        if ext == 'pdf':
+            if not file_content.startswith(b'%PDF-'):
+                raise FileValidationError("Invalid PDF file signature.")
+        elif ext == 'docx':
+            # DOCX files are ZIP archives, starting with PK\x03\x04
+            if not file_content.startswith(b'PK\x03\x04'):
+                raise FileValidationError("Invalid DOCX file signature.")
+        
+        # txt files are just plain text, no strict magic byte requirement
         return True

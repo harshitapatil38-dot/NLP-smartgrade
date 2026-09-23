@@ -1,16 +1,23 @@
 from typing import Optional, List
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, computed_field, Field
 from datetime import datetime
 from app.models.enums import StatusEnum, ProcessingStatusEnum
 
 # --- Document Schemas ---
 
 class DocumentBase(BaseModel):
-    title: str
-    description: Optional[str] = None
-    category: Optional[str] = None
+    title: str = Field(..., min_length=1, max_length=255)
+    description: Optional[str] = Field(default=None, max_length=2000)
+    category: Optional[str] = Field(default=None, max_length=100)
     department_id: Optional[int] = None
-    source: Optional[str] = None
+    source: Optional[str] = Field(default=None, max_length=500)
+
+class DocumentUpdate(BaseModel):
+    title: Optional[str] = Field(default=None, min_length=1, max_length=255)
+    description: Optional[str] = Field(default=None, max_length=2000)
+    category: Optional[str] = Field(default=None, max_length=100)
+    department_id: Optional[int] = None
+    source: Optional[str] = Field(default=None, max_length=500)
 
 class DocumentCreate(DocumentBase):
     uploaded_by: Optional[int] = None
@@ -21,6 +28,17 @@ class DocumentResponse(DocumentBase):
     uploaded_by: Optional[int] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
+    model_config = ConfigDict(from_attributes=True)
+
+class DocumentDetailResponse(DocumentResponse):
+    versions: List["DocumentVersionResponse"] = []
+    
+    @computed_field
+    def latest_version(self) -> Optional["DocumentVersionResponse"]:
+        if not self.versions:
+            return None
+        return max(self.versions, key=lambda v: v.version_number)
+    
     model_config = ConfigDict(from_attributes=True)
 
 

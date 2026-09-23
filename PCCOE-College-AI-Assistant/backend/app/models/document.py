@@ -32,6 +32,7 @@ class DocumentVersion(Base):
     uploaded_by = Column(Integer, ForeignKey("users.id"))
     status = Column(Enum(StatusEnum), default=StatusEnum.DRAFT, nullable=False)
     processing_status = Column(Enum(ProcessingStatusEnum), default=ProcessingStatusEnum.PENDING, nullable=False)
+    content_hash = Column(String, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     published_at = Column(DateTime(timezone=True))
     archived_at = Column(DateTime(timezone=True))

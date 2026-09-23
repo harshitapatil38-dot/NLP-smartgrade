@@ -6,7 +6,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import chat, health
+from app.api.routes import chat, health, auth, approval, documents
 from app.core.logging import setup_logging
 from app.core.middleware import RequestLoggingMiddleware
 from app.core.errors import setup_exception_handlers
@@ -65,7 +65,9 @@ setup_exception_handlers(app)
 
 app.include_router(chat.router, prefix=API_V1_PREFIX)
 app.include_router(health.router, prefix=API_V1_PREFIX)
-
+app.include_router(auth.router, prefix=API_V1_PREFIX + "/auth")
+app.include_router(approval.router, prefix=API_V1_PREFIX + "/workflow")
+app.include_router(documents.router, prefix=API_V1_PREFIX + "/documents")
 
 # ---------------------------------------------------------------------------
 # Root — convenience redirect / welcome

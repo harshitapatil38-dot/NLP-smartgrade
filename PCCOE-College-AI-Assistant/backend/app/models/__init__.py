@@ -6,3 +6,4 @@ from .faq import FAQ
 from .knowledge import KnowledgeSource
 from .chat import ChatSession, ChatMessage, Feedback, UnansweredQuestion
 from .audit import AuditLog
+from .approval import ApprovalRecord

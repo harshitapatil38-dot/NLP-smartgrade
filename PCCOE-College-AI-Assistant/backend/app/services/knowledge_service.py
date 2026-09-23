@@ -9,7 +9,7 @@ from app.models.faq import FAQ
 from app.models.knowledge import KnowledgeSource
 from app.models.enums import StatusEnum
 from app.schemas.knowledge import (
-    DocumentCreate, DocumentVersionCreate, FAQCreate, FAQUpdate, KnowledgeSourceCreate
+    DocumentCreate, DocumentUpdate, DocumentVersionCreate, FAQCreate, FAQUpdate, KnowledgeSourceCreate
 )
 from app.core.exceptions import InvalidStatusTransitionError, ResourceNotFoundError
 
@@ -46,6 +46,22 @@ class KnowledgeService:
 
     # --- Document & Version operations ---
 
+    def list_documents(self, skip: int = 0, limit: int = 100, status: Optional[StatusEnum] = None, department_id: Optional[int] = None, source: Optional[str] = None):
+        query = self.db.query(Document)
+        if status:
+            query = query.filter(Document.status == status)
+        if department_id:
+            query = query.filter(Document.department_id == department_id)
+        if source:
+            query = query.filter(Document.source == source)
+        return query.offset(skip).limit(limit).all()
+
+    def get_document(self, document_id: int) -> Document:
+        doc = self.db.query(Document).filter(Document.id == document_id).first()
+        if not doc:
+            raise ResourceNotFoundError(f"Document {document_id} not found")
+        return doc
+
     def create_document(self, data: DocumentCreate) -> Document:
         db_doc = Document(**data.model_dump())
         db_doc.status = StatusEnum.DRAFT
@@ -53,6 +69,38 @@ class KnowledgeService:
         self.db.commit()
         self.db.refresh(db_doc)
         return db_doc
+
+    def update_document(self, document_id: int, data: DocumentUpdate) -> Document:
+        doc = self.get_document(document_id)
+        update_data = data.model_dump(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(doc, key, value)
+        self.db.commit()
+        self.db.refresh(doc)
+        return doc
+
+    def delete_document(self, document_id: int):
+        doc = self.get_document(document_id)
+        
+        from app.models.approval import ApprovalRecord
+        
+        for version in doc.versions:
+            # Delete chunks
+            for chunk in version.chunks:
+                self.db.delete(chunk)
+            
+            # Delete approval records
+            approval_records = self.db.query(ApprovalRecord).filter(
+                ApprovalRecord.document_version_id == version.id
+            ).all()
+            for record in approval_records:
+                self.db.delete(record)
+                
+            # Delete version
+            self.db.delete(version)
+            
+        self.db.delete(doc)
+        self.db.commit()
 
     def create_document_version(self, data: DocumentVersionCreate) -> DocumentVersion:
         # Verify document exists

@@ -1,0 +1,22 @@
+{
+  "root": "https://www.pccoepune.com/",
+  "pages_discovered": 20,
+  "pages_successfully_fetched": 20,
+  "pages_failed": 0,
+  "pdfs_discovered": 149,
+  "pdfs_downloaded": 2,
+  "docx_discovered": 0,
+  "docx_downloaded": 0,
+  "duplicates_skipped": 0,
+  "unchanged_documents": 0,
+  "new_documents": 19,
+  "new_versions": 1,
+  "external_links_skipped": 447,
+  "failed_urls": [],
+  "categories": {
+    "Admissions": 3,
+    "College Information": 13,
+    "Clubs/student activities": 1,
+    "Departments": 2
+  }
+}

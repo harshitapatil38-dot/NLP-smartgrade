@@ -20,10 +20,33 @@ class ExtractorService:
                 return DOCXExtractor.extract(file_path)
             elif ext == 'txt':
                 return TXTExtractor.extract(file_path)
+            elif ext == 'html' or ext == 'htm':
+                return HTMLExtractor.extract(file_path)
             else:
                 raise ExtractionError(f"Unsupported extension: {ext}")
         except Exception as e:
             raise ExtractionError(f"Extraction failed: {str(e)}")
+
+class HTMLExtractor:
+    @staticmethod
+    def extract(file_path: str) -> List[Dict[str, Any]]:
+        from bs4 import BeautifulSoup
+        
+        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+            html = f.read()
+            
+        soup = BeautifulSoup(html, 'html.parser')
+        
+        # Remove unwanted tags
+        for tag in soup(['script', 'style', 'nav', 'footer', 'header', 'noscript', 'meta', 'link']):
+            tag.decompose()
+            
+        # Extract text and collapse multiple spaces/newlines
+        text = soup.get_text(separator=' ')
+        import re
+        text = re.sub(r'\s+', ' ', text).strip()
+        
+        return [{"text": text, "page_number": None}]
 
 class PDFExtractor:
     @staticmethod
