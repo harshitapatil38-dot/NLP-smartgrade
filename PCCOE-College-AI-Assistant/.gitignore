@@ -38,3 +38,10 @@ yarn-error.log*
 # OS Files
 .DS_Store
 Thumbs.db
+
+# Local environment files
+.env.*
+!.env.example
+
+# Generated crawler storage
+backend/storage/
