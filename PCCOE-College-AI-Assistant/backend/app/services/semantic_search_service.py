@@ -31,7 +31,6 @@ class SemanticSearchService:
             .join(DocumentVersion, DocumentChunk.document_version_id == DocumentVersion.id)
             .join(Document, DocumentVersion.document_id == Document.id)
             .filter(DocumentVersion.status == StatusEnum.PUBLISHED)
-            .filter(DocumentChunk.embedding.cosine_distance(query_embedding) < max_distance)
             .order_by(DocumentChunk.embedding.cosine_distance(query_embedding))
             .limit(self.top_k)
             .all()
@@ -41,6 +40,10 @@ class SemanticSearchService:
         formatted_results = []
         for chunk, distance in results:
             similarity_score = 1.0 - distance
+            
+            if similarity_score < self.threshold:
+                continue
+            
             version = chunk.version
             doc = version.document
             

@@ -5,6 +5,12 @@ from sqlalchemy.orm import sessionmaker
 
 from app.database.database import Base
 
+@pytest.fixture(scope="session", autouse=True)
+def mock_env():
+    """Isolate tests from local .env configurations."""
+    os.environ["SEMANTIC_SEARCH_THRESHOLD"] = "0.3"
+    yield
+
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://user:password@127.0.0.1:5433/dbname")
 
 engine = create_engine(DATABASE_URL)
