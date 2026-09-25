@@ -3,14 +3,17 @@ import ReactMarkdown from 'react-markdown';
 import { api } from '../services/api';
 import './ChatbotPage.css';
 
+const QUICK_QUESTIONS = [
+  "What documents are required for admission?",
+  "What courses does PCCOE offer?",
+  "What departments are available?",
+  "What scholarships are available?",
+  "What facilities does PCCOE provide?",
+  "How can I contact PCCOE?"
+];
+
 const ChatbotPage = () => {
-  const [messages, setMessages] = useState([
-    {
-      role: 'assistant',
-      content: 'Welcome to the PCCOE AI Assistant! How can I help you with college information today?',
-      sources: []
-    }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
@@ -21,13 +24,7 @@ const ChatbotPage = () => {
   }, [messages, loading]);
 
   const handleClearChat = () => {
-    setMessages([
-      {
-        role: 'assistant',
-        content: 'Welcome to the PCCOE AI Assistant! How can I help you with college information today?',
-        sources: []
-      }
-    ]);
+    setMessages([]);
     setSessionId(crypto.randomUUID());
   };
 
@@ -35,7 +32,6 @@ const ChatbotPage = () => {
     const question = (typeof overrideQuestion === 'string' ? overrideQuestion : inputValue).trim();
     if (!question || loading) return;
 
-    // Add user message
     const userMsg = { role: 'user', content: question, sources: [] };
     setMessages((prev) => [...prev, userMsg]);
     setInputValue('');
@@ -44,7 +40,6 @@ const ChatbotPage = () => {
     try {
       const response = await api.sendChatMessage(question, sessionId);
       
-      // Update session ID if backend gave us a new one
       if (response.session_id && response.session_id !== sessionId) {
         setSessionId(response.session_id);
       }
@@ -81,85 +76,93 @@ const ChatbotPage = () => {
 
   const renderSourceCard = (src, idx) => {
     const isUrl = src.source && src.source.startsWith('http');
+    // Extract a display friendly URL
+    const displayUrl = isUrl ? src.source.replace(/^https?:\/\/(www\.)?/, '') : src.source;
+
     return (
-      <details key={idx} className="chatbot-source-card">
-        <summary className="chatbot-source-summary">
-          <span className="chatbot-source-icon">📄</span>
-          <span className="chatbot-source-title">{src.title || 'Untitled Document'}</span>
-          {src.similarity_score !== null && src.similarity_score !== undefined && (
-            <span className="chatbot-source-badge">
-              Relevance: {src.similarity_score.toFixed(2)}
-            </span>
-          )}
-        </summary>
-        <div className="chatbot-source-details">
-          {src.department && (
-            <div className="source-meta-row">
-              <strong>Department:</strong> {src.department}
-            </div>
-          )}
-          {src.document_version_id && (
-            <div className="source-meta-row">
-              <strong>Version ID:</strong> {src.document_version_id}
-            </div>
-          )}
-          {src.page_number && (
-            <div className="source-meta-row">
-              <strong>Page:</strong> {src.page_number}
-            </div>
-          )}
-          {src.source && (
-            <div className="source-meta-row">
-              <strong>Source:</strong>{' '}
-              {isUrl ? (
-                <a href={src.source} target="_blank" rel="noopener noreferrer">
-                  {src.source}
-                </a>
-              ) : (
-                <span>{src.source}</span>
-              )}
-            </div>
-          )}
+      <div key={idx} className="chatbot-source-card">
+        <div className="source-card-header">
+          <span className="source-icon">📄</span>
+          <span className="source-title">PCCOE Official Source</span>
         </div>
-      </details>
+        <div className="source-card-url">
+          {displayUrl}
+        </div>
+        {isUrl ? (
+          <a href={src.source} target="_blank" rel="noopener noreferrer" className="source-card-link">
+            View source →
+          </a>
+        ) : (
+          <span className="source-card-link-disabled">Local source</span>
+        )}
+      </div>
     );
   };
 
   return (
     <div className="chatbot-container">
       <header className="chatbot-header">
-        <div className="chatbot-header-title">
-          <h1>PCCOE College AI Assistant</h1>
-          <p>Official student information and knowledge base</p>
+        <div className="header-brand">
+          <div className="header-logo">
+            {/* PCCOE Initial or Logo placeholder */}
+            <span>P</span>
+          </div>
+          <div className="chatbot-header-title">
+            <h1>PCCOE College AI Assistant</h1>
+            <p>Official Information Portal</p>
+          </div>
         </div>
-        <button className="chatbot-clear-btn" onClick={handleClearChat} disabled={loading}>
-          Clear Chat
-        </button>
+        <nav className="header-nav">
+          <a href="/login" className="nav-login-btn">Admin Login</a>
+          <button className="chatbot-clear-btn" onClick={handleClearChat} disabled={loading || messages.length === 0}>
+            New Chat
+          </button>
+        </nav>
       </header>
       
       <div className="chatbot-messages-container">
-        {messages.map((msg, idx) => (
-          <div key={idx} className={`chatbot-message-row ${msg.role === 'user' ? 'row-user' : 'row-assistant'}`}>
-            <div className={`chatbot-message-bubble ${msg.role === 'user' ? 'bubble-user' : 'bubble-assistant'} ${msg.isError ? 'bubble-error' : ''}`}>
-              <div className="chatbot-message-content">
-                {msg.role === 'assistant' ? (
-                  <ReactMarkdown>{msg.content}</ReactMarkdown>
-                ) : (
-                  msg.content
-                )}
-              </div>
-              
-              {msg.sources && msg.sources.length > 0 && (
-                <div className="chatbot-sources">
-                  <h4 className="chatbot-sources-heading">Sources from the official college knowledge base</h4>
-                  <div className="chatbot-sources-list">
-                    {msg.sources.map((src, sIdx) => renderSourceCard(src, sIdx))}
-                  </div>
-                </div>
-              )}
+        {messages.length === 0 && !loading ? (
+          <div className="chatbot-welcome-area">
+            <h2>Welcome to PCCOE AI Assistant</h2>
+            <p className="welcome-subtitle">How can I help you today?</p>
+            <p className="welcome-desc">
+              Ask about admissions, academics, departments, examinations, scholarships, facilities, campus information and more.
+            </p>
+            
+            <div className="quick-questions-grid">
+              {QUICK_QUESTIONS.map((q, idx) => (
+                <button key={idx} className="quick-question-card" onClick={() => handleSubmit(q)}>
+                  <span>{q}</span>
+                  <span className="arrow">→</span>
+                </button>
+              ))}
             </div>
           </div>
-        ))}
+        ) : (
+          messages.map((msg, idx) => (
+            <div key={idx} className={`chatbot-message-row ${msg.role === 'user' ? 'row-user' : 'row-assistant'}`}>
+              <div className={`chatbot-message-bubble ${msg.role === 'user' ? 'bubble-user' : 'bubble-assistant'} ${msg.isError ? 'bubble-error' : ''}`}>
+                <div className="chatbot-message-content">
+                  {msg.role === 'assistant' ? (
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  ) : (
+                    msg.content
+                  )}
+                </div>
+                
+                {msg.sources && msg.sources.length > 0 && (
+                  <div className="chatbot-sources">
+                    <h4 className="chatbot-sources-heading">Sources</h4>
+                    <div className="chatbot-sources-list">
+                      {msg.sources.map((src, sIdx) => renderSourceCard(src, sIdx))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+        
         {loading && (
           <div className="chatbot-message-row row-assistant">
             <div className="chatbot-message-bubble bubble-assistant bubble-loading">
@@ -168,38 +171,28 @@ const ChatbotPage = () => {
           </div>
         )}
         
-        {messages.length === 1 && !loading && (
-          <div className="chatbot-suggested-questions">
-            <p className="suggested-heading">Suggested Questions:</p>
-            <div className="suggested-chips">
-              <button onClick={() => { setInputValue('How many departments does PCCOE have?'); handleSubmit('How many departments does PCCOE have?'); }}>Departments</button>
-              <button onClick={() => { setInputValue('What clubs are available?'); handleSubmit('What clubs are available?'); }}>Clubs</button>
-              <button onClick={() => { setInputValue('Tell me about the library.'); handleSubmit('Tell me about the library.'); }}>Library</button>
-              <button onClick={() => { setInputValue('What facilities are available?'); handleSubmit('What facilities are available?'); }}>Facilities</button>
-              <button onClick={() => { setInputValue('What scholarships are available?'); handleSubmit('What scholarships are available?'); }}>Scholarships</button>
-            </div>
-          </div>
-        )}
-        
         <div ref={messagesEndRef} />
       </div>
 
       <div className="chatbot-footer-wrapper">
-        <div className="chatbot-disclaimer">
-          Answers are generated using information retrieved from the college knowledge base.
-        </div>
         <div className="chatbot-input-area">
           <textarea
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask a question about PCCOE (Press Enter to send, Shift+Enter for new line)..."
+            placeholder="Ask a question about PCCOE..."
             disabled={loading}
             rows={1}
           />
-          <button className="chatbot-send-btn" onClick={handleSubmit} disabled={!inputValue.trim() || loading} aria-label="Send message">
-            Send
+          <button className="chatbot-send-btn" onClick={() => handleSubmit()} disabled={!inputValue.trim() || loading} aria-label="Send message">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
           </button>
+        </div>
+        <div className="chatbot-disclaimer">
+          AI Assistant can make mistakes. Please verify important information on the official PCCOE website.
         </div>
       </div>
     </div>
