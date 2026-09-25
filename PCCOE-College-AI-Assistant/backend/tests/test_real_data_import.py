@@ -1,5 +1,15 @@
 import pytest
+import requests
 from app.services.ingestion.extractors import HTMLExtractor
+from app.models.document import Document, DocumentVersion, DocumentChunk
+from app.models.enums import StatusEnum, ProcessingStatusEnum
+from app.models.user import User
+from app.models.enums import RoleEnum
+from app.services.ingestion.ingestion_service import DocumentIngestionService
+from app.services.ingestion.storage import LocalStorageService
+from app.services.ingestion.file_validator import FileValidator
+from scripts.import_pccoe_knowledge import main
+from app.services.ingestion.crawler import PCCOECrawler, CrawlerConfig
 
 def test_html_extractor():
     html_content = """
@@ -43,14 +53,6 @@ def test_html_extractor():
         os.remove(temp_path)
 
 def test_import_workflow(db_session):
-    from app.models.document import Document, DocumentVersion, DocumentChunk
-    from app.models.enums import StatusEnum, ProcessingStatusEnum
-    from app.models.user import User
-    from app.models.enums import RoleEnum
-    from app.services.ingestion.ingestion_service import DocumentIngestionService
-    from app.services.ingestion.storage import LocalStorageService
-    from app.services.ingestion.file_validator import FileValidator
-    import tempfile
     import os
     
     # 0. Create a mock user
@@ -89,7 +91,7 @@ def test_import_workflow(db_session):
     db_session.add(ver)
     db_session.commit()
     
-    # 3. Simulate processing (which happens via Celery/Background task in production when published)
+    # 3. Simulate processing
     validator = FileValidator(allowed_extensions=['html'], max_size_mb=10)
     ingestion_service = DocumentIngestionService(db_session, storage_service=storage, file_validator=validator)
     
@@ -108,44 +110,33 @@ def test_import_workflow(db_session):
     assert chunks[0].metadata_["source_url"] == "https://www.pccoepune.com/admission-home.php"
 
 def test_duplicate_prevention_in_import(db_session, monkeypatch):
-    import requests
-    from scripts.import_pccoe_knowledge import run_import, OFFICIAL_URLS
-    from app.models.document import Document, DocumentVersion
-    
     # Mock requests.get
     class MockResponse:
-        def __init__(self):
-            self.content = b"<html><body>Mock Content</body></html>"
+        def __init__(self, content):
+            self.content = content
         def raise_for_status(self):
             pass
             
-    monkeypatch.setattr(requests, "get", lambda url, **kwargs: MockResponse())
+    # First response
+    response_1 = MockResponse(b"<html><body>Mock Content</body></html>")
+    # Second response (slightly different content to force new version creation, since identical content is skipped now)
+    response_2 = MockResponse(b"<html><body>Mock Content V2</body></html>")
     
-    # Let's run it once (only on 1 URL for speed, so mock OFFICIAL_URLS)
-    mock_urls = [
-        {
-            "url": "https://www.pccoepune.com/test-dup.php",
-            "title": "Dup Test",
-            "category": "Test",
-            "department_code": None
-        }
-    ]
-    monkeypatch.setattr("scripts.import_pccoe_knowledge.OFFICIAL_URLS", mock_urls)
-    
-    # Needs to use the test db_session. run_import creates its own SessionLocal.
-    # So we'll mock SessionLocal to return a wrapper that doesn't close our db_session
-    class MockSession:
-        def __init__(self, session):
-            self.session = session
-        def __getattr__(self, name):
-            return getattr(self.session, name)
-        def close(self):
-            pass # Prevent run_import from closing the test session
-            
-    monkeypatch.setattr("scripts.import_pccoe_knowledge.SessionLocal", lambda: MockSession(db_session))
+    responses = [response_1, response_2]
+    def mock_get(*args, **kwargs):
+        return responses.pop(0)
+
+    monkeypatch.setattr(requests, "get", mock_get)
     
     # First run
-    run_import()
+    config = CrawlerConfig(
+        seed_urls=["https://www.pccoepune.com/test-dup.php"],
+        max_depth=0,
+        max_pages=1,
+        dry_run=False
+    )
+    crawler1 = PCCOECrawler(db_session, config)
+    crawler1.crawl()
     
     # Check DB
     docs = db_session.query(Document).filter_by(source="https://www.pccoepune.com/test-dup.php").all()
@@ -157,7 +148,8 @@ def test_duplicate_prevention_in_import(db_session, monkeypatch):
     assert vers[0].version_number == 1
     
     # Second run
-    run_import()
+    crawler2 = PCCOECrawler(db_session, config)
+    crawler2.crawl()
     
     # Check DB again
     docs_again = db_session.query(Document).filter_by(source="https://www.pccoepune.com/test-dup.php").all()
