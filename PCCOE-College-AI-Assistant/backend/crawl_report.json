@@ -1,22 +1,59 @@
 {
-  "root": "https://www.pccoepune.com/",
-  "pages_discovered": 20,
-  "pages_successfully_fetched": 20,
-  "pages_failed": 0,
-  "pdfs_discovered": 149,
-  "pdfs_downloaded": 2,
-  "docx_discovered": 0,
-  "docx_downloaded": 0,
-  "duplicates_skipped": 0,
-  "unchanged_documents": 0,
-  "new_documents": 19,
-  "new_versions": 1,
-  "external_links_skipped": 447,
-  "failed_urls": [],
-  "categories": {
-    "Admissions": 3,
-    "College Information": 13,
-    "Clubs/student activities": 1,
-    "Departments": 2
-  }
+  "discovered": 170,
+  "crawled": 10,
+  "imported": 8,
+  "skipped": 0,
+  "failed": 0,
+  "duplicates": 2,
+  "errors": 0,
+  "urls": [
+    {
+      "url": "https://www.pccoepune.com/",
+      "status": "duplicate"
+    },
+    {
+      "url": "https://www.pccoepune.com/ir/ir-home.php",
+      "status": "imported",
+      "title": "PCCOE International Relations | Global Opportunities & MoUs"
+    },
+    {
+      "url": "http://www.pccoepune.com/awards.php",
+      "status": "imported",
+      "title": "PCCOE Rankings & Awards | Top Engineering College Accreditations"
+    },
+    {
+      "url": "http://www.pccoepune.com/direct-downloads.php",
+      "status": "imported",
+      "title": "PCCOE Downloads | Bonafide, Transcript, LC, TC Forms"
+    },
+    {
+      "url": "https://www.pccoepune.com/pdf/mandatory-disclosure.pdf",
+      "status": "imported",
+      "title": "Document: mandatory-disclosure.pdf"
+    },
+    {
+      "url": "https://www.pccoepune.com/academic-calendar.php",
+      "status": "imported",
+      "title": "PCCOE Academic Calendar 2025-26 - B.Tech & MCA Dates | PCCOE"
+    },
+    {
+      "url": "https://www.pccoepune.com/code-of-conduct.php",
+      "status": "imported",
+      "title": "Code of Conduct - PCCOE | Pimpri Chinchwad"
+    },
+    {
+      "url": "https://www.pccoepune.com/pccoe-alumni-association",
+      "status": "imported",
+      "title": "PCCOE Alumni Network - Join & Connect | PCCOE"
+    },
+    {
+      "url": "http://www.pccoepune.com/director.php",
+      "status": "duplicate"
+    },
+    {
+      "url": "https://www.pccoepune.com/pccoe-departments.php",
+      "status": "imported",
+      "title": "PCCOE Courses- UG,PG,PhD| Best engineering college Pune"
+    }
+  ]
 }
