@@ -30,35 +30,39 @@ export const LoginPage = () => {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <div className="login-logo">P</div>
+          <img src="https://www.pccoepune.com/images/pccoe-logo-new.webp" alt="PCCOE Logo" className="login-logo-img" style={{height: '60px', marginBottom: '1rem'}} />
           <h2>Admin Login</h2>
           <p>PCCOE College AI Assistant</p>
         </div>
         
-        {error && <div className="alert alert-error">{error}</div>}
+        {error && <div className="alert alert-error" role="alert">{error}</div>}
         
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Email</label>
+            <label htmlFor="email">Email</label>
             <input 
+              id="email"
               type="email" 
               value={email} 
               onChange={e => setEmail(e.target.value)} 
               placeholder="admin@example.com"
               required 
+              aria-required="true"
             />
           </div>
           <div className="form-group">
-            <label>Password</label>
+            <label htmlFor="password">Password</label>
             <input 
+              id="password"
               type="password" 
               value={password} 
               onChange={e => setPassword(e.target.value)} 
               placeholder="••••••••"
               required 
+              aria-required="true"
             />
           </div>
-          <button type="submit" disabled={loading} className="btn-primary">
+          <button type="submit" disabled={loading} className="btn-primary" aria-busy={loading}>
             {loading ? 'Authenticating...' : 'Sign In'}
           </button>
         </form>

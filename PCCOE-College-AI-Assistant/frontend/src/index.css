@@ -55,25 +55,31 @@ button:disabled {
   background: var(--primary); 
   color: var(--white); 
 }
-.btn-primary:hover:not(:disabled) { 
+.btn-primary:hover:not(:disabled), .btn-primary:focus-visible { 
   background: var(--primary-dark); 
   transform: translateY(-1px);
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 .btn-secondary { 
   background: var(--white); 
   color: var(--text-dark); 
   border: 1px solid var(--border-color); 
 }
-.btn-secondary:hover:not(:disabled) { 
+.btn-secondary:hover:not(:disabled), .btn-secondary:focus-visible { 
   background: var(--secondary); 
   border-color: #cbd5e1;
+  outline: 2px solid #cbd5e1;
+  outline-offset: 2px;
 }
 .btn-danger { 
   background: var(--danger); 
   color: var(--white); 
 }
-.btn-danger:hover:not(:disabled) {
+.btn-danger:hover:not(:disabled), .btn-danger:focus-visible {
   background: #dc2626;
+  outline: 2px solid #dc2626;
+  outline-offset: 2px;
 }
 .btn-sm { 
   padding: 0.35rem 0.75rem; 
@@ -118,10 +124,16 @@ button:disabled {
   transition: all 0.2s;
 }
 .admin-sidebar ul li a:hover,
+.admin-sidebar ul li a:focus-visible,
 .admin-sidebar ul li a.active {
   background: rgba(255,255,255,0.1);
   color: var(--white);
   padding-left: 1.75rem;
+  outline: none;
+}
+.admin-sidebar ul li a:focus-visible {
+  outline: 2px solid white;
+  outline-offset: -2px;
 }
 
 .sidebar-footer {
@@ -136,7 +148,7 @@ button:disabled {
   width: 100%;
   border: 1px solid rgba(255,255,255,0.2);
 }
-.btn-logout:hover {
+.btn-logout:hover, .btn-logout:focus-visible {
   background: rgba(239, 68, 68, 0.9); /* Danger on hover */
   border-color: transparent;
 }
@@ -313,20 +325,6 @@ button:disabled {
   margin-bottom: 2rem;
 }
 
-.login-logo {
-  width: 64px;
-  height: 64px;
-  background-color: var(--primary);
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  font-weight: 800;
-  margin: 0 auto 1rem;
-}
-
 .login-card h2 { 
   margin: 0 0 0.5rem 0; 
   color: var(--primary-dark);
@@ -353,9 +351,10 @@ button:disabled {
   color: var(--text-light);
   font-size: 0.9rem;
 }
-.login-back-link:hover {
+.login-back-link:hover, .login-back-link:focus-visible {
   color: var(--primary);
   text-decoration: underline;
+  outline: none;
 }
 
 /* Alerts */
